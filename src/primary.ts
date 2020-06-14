@@ -84,6 +84,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // error("all cond failed")
         return null
     })
+    // let is unnessary, but for teach purpose, we leave it here
     .set("let", function (tail: AstNode, env: Env): AstNode {
         // if (!isList(tail) || length(tail) != 2) {
         //     error("let must have a list of define and a value")
@@ -122,6 +123,18 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         const varList = car(tail)
         // todo check varList all be names
         return cons("lambda", tail)
+    })
+    .set("define", function (tail: AstNode, env: Env): AstNode {
+        // if (!isList(tail) || length(tail) != 2) {
+        //     error("let must have a list of define and a value")
+        //     return null
+        // }
+        // lambda (x) body
+        const name = car(tail)
+        // todo check name is name
+        const v = evalExpr(cadr(tail), env)
+        env.set(<string>name, v)
+        return null
     })
     .set("+", (tail: AstNode, env: Env): AstNode => {
         // todo check number

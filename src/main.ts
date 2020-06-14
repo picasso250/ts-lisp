@@ -29,7 +29,7 @@ function test(files: Array<string>) {
             .then(response => response.text())
             .then(code => {
                 const astList = parse(code)
-                console.log(astList)
+                // console.log(astList)
                 const r = evalLisp(astList)
                 fetch("../src/test/" + file + '.res')
                     .then(response => response.text())
@@ -86,5 +86,5 @@ function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
 }
 
 bindRun("run");
-test(["add", "cond","list"]);
-// test([ "cond"]);
+test(["add", "cond", "list", "define"]);
+// test(["define"]);
