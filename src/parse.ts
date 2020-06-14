@@ -1,3 +1,5 @@
+import { error } from './error'
+
 export type AstNode = string | number | null | Pair
 export type Pair = [AstNode, AstNode]
 export function parse(code: string): Array<AstNode> {
@@ -96,18 +98,35 @@ function parsePass1Inner(i: number, tokens: Array<string>, begin: Array<string>)
     [number, stringTree] {
 
     let ret: stringTree = [...begin]
+    let willQuote: boolean = false
     while (i < tokens.length) {
         const token = tokens[i];
-        if (token == "(") {
+        if (token == "'") {
+            willQuote = true
+        } else if (token == "(") {
             let v
             [i, v] = parsePass1Inner(i + 1, tokens, [token])
-            ret.push(v)
+            if (willQuote) {
+                ret.push(["(", "quote", v, ")"])
+                willQuote = false
+            } else {
+                ret.push(v)
+            }
             continue
         } else if (token == ")") {
+            if (willQuote) {
+                error("' before )")
+                willQuote = false
+            }
             ret.push(token)
             return [i + 1, ret]
         } else {
-            ret.push(token)
+            if (willQuote) {
+                ret.push(["(", "quote", token, ")"])
+                willQuote = false
+            } else {
+                ret.push(token)
+            }
         }
         i++
     }
