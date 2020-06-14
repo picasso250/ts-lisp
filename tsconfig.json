@@ -1,0 +1,13 @@
+{
+    "files": [
+        "src/main.ts",
+        "src/parse.ts",
+        "src/eval.ts",
+        "src/error.ts",
+        "src/primary.ts",
+    ],
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "target": "es2015",
+    }
+}
