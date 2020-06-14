@@ -1,5 +1,5 @@
 import { AstNode, Pair } from "./parse"
-import { functions, car, cadr, caddr, atom, cdr } from "./primary"
+import { functions, car, cadr, cddr, caddr, atom, cdr } from "./primary"
 import { error } from "./error"
 
 export function evalLisp(astList: Array<AstNode>): Array<String> {
@@ -29,7 +29,7 @@ export class Env {
         }
         return null
     }
-    set(name: string, value: AstNode):Env {
+    set(name: string, value: AstNode): Env {
         this.vars.set(name, value)
         return this
     }
@@ -106,8 +106,15 @@ function apply(func: AstNode, tail: AstNode, env: Env): AstNode {
         tail = cdr(<Pair>tail)
         defNameList = cdr(<Pair>defNameList)
     }
-    const body = caddr(<Pair>func) // todo: support multi body
-    return evalExpr(body, env.deriv(vars))
+    let body = cddr(<Pair>func) // todo: check body exists
+    let r = null
+    let newEnv = env.deriv(vars)
+    // support multi body
+    while (body !== null) {
+        r = evalExpr(car(body), newEnv)
+        body = cdr(<Pair>body)
+    }
+    return r
 }
 function isLambda(p: Pair) {
     return car(p) === "lambda"

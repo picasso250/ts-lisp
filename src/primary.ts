@@ -140,6 +140,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         }
         if (typeof name === "string") {
             define(name, cadr(tail), env)
+            return null
         }
         const realName = car(name)
         if (typeof realName === "string") {
@@ -219,6 +220,10 @@ export function cadr(v: AstNode): AstNode {
     // todo error checking
     return (<Pair>(<Pair>v)[1])[0]
 }
+export function cddr(v: AstNode): AstNode {
+    // todo error checking
+    return (<Pair>(<Pair>v)[1])[1]
+}
 export function caddr(v: AstNode): AstNode {
     // todo error checking
     return (<Pair>(<Pair>(<Pair>v)[1])[1])[0]
@@ -249,6 +254,7 @@ export function isNull(value: AstNode): boolean {
     return value === null;
 }
 function define(name: string, node: AstNode, env: Env) {
+    // todo name not over write system functions
     const v = evalExpr(node, env)
     env.set(<string>name, v)
 }

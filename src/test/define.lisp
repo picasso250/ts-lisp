@@ -4,3 +4,7 @@
 (define (cadr x)
   (car (cdr x)))
 (cadr (quote ((a b) (1 2) e)))
+(define (add1 x)
+  (define a 1)
+  (+ x a))
+(add1 4)
