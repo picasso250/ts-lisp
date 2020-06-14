@@ -86,5 +86,5 @@ function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
 }
 
 bindRun("run");
-test(["add", "cond"]);
+test(["add", "cond","list"]);
 // test([ "cond"]);

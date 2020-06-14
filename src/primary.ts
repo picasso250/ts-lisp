@@ -33,7 +33,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // if (atom(v)) {
         //     error("car of atom");
         // }
-        const v = car(tail)
+        const v = evalExpr(car(tail), env)
         // todo check type
         return (<Pair>v)[0]
     })
@@ -45,7 +45,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // if (atom(v)) {
         //     error("cdr of atom");
         // }
-        const v = car(tail)
+        const v = evalExpr(car(tail), env)
         // todo check type
         return (<Pair>v)[1]
     })
