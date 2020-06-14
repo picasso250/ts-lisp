@@ -81,7 +81,6 @@ function isDigit(theNum: string): boolean {
 }
 function toAtomOrPair(st: stringTree): atomOrPair {
     if (typeof st === "string") {
-        if (st === "nil") return null;
         return st
     }
     // (st[0] == "(") 
@@ -119,5 +118,5 @@ function parsePass1Inner(i: number, tokens: Array<string>, begin: Array<string>)
 }
 
 function isSpace(c: string): boolean {
-    return c == " " || c == "\t" || c == "\n" || c == "r";
+    return c == " " || c == "\t" || c == "\n" || c == "\r";
 }

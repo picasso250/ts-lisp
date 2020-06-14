@@ -4,7 +4,7 @@ import { error } from "./error"
 
 const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
     .set("quote", (tail: AstNode, env: Env): AstNode => {
-        return tail
+        return car(tail)
     })
     .set("atom", (tail: AstNode, env: Env): AstNode => {
         // if (!isList(tail)) {
@@ -66,25 +66,23 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         //     error("cond must have a list of conditions")
         //     return null
         // }
-        let condList = car(<Pair>tail);
-        // if (!isList(condList) || length(condList) < 1) {
-        //     error("cond list must have at leat one condition")
-        //     return null
-        // }
+        let condList = tail;
+        const newEnv = env.deriv(new Map().set("else", "#t"))
         while (condList !== null) {
             const condExpr = car(<Pair>condList)
             // if (!(isList(condExpr) && length(condExpr) == 2)) {
             //     error("cond-expr must be list of 2 elements")
             //     return null
             // }
-            // cons newEnv=env.deriv({"else":"#t"})
-            const c = evalExpr(car(<Pair>condExpr), env)
+            const c = evalExpr(car(<Pair>condExpr), newEnv)
             if (c !== null) {
                 const v = evalExpr(cadr(<Pair>condExpr), env)
                 return v
             }
             condList = cdr(<Pair>condList)
         }
+        // error("all cond failed")
+        return null
     })
     .set("let", function (tail: AstNode, env: Env): AstNode {
         // if (!isList(tail) || length(tail) != 2) {

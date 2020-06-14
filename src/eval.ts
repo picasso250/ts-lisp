@@ -22,11 +22,12 @@ export class Env {
     }
     get(name: string): AstNode {
         if (this.vars.has(name)) {
-            return this.vars.get(name)
+            return <AstNode>(this.vars.get(name))
         }
         if (this.parent !== null) {
             return this.parent.get(name)
         }
+        return null
     }
     set(name: string, value: AstNode) {
         this.vars.set(name, value)
@@ -57,7 +58,7 @@ export function evalExpr(node: AstNode, env: Env): value {
         if (typeof head === "string") {
             if (functions.has(head)) {
                 const func = functions.get(head)
-                return func(tail, env)
+                return (<(tail: AstNode, env: Env) => AstNode>func)(tail, env)
             }
         }
         // lambda
@@ -111,5 +112,8 @@ function isLambda(p: Pair) {
     return car(p) === "lambda"
 }
 function valueToString(value: value): string {
+    if (value === null) {
+        return "nil"
+    }
     return value.toString()
 }
