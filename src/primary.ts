@@ -115,7 +115,40 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         const letBody = cadr(<Pair>tail)
         return evalExpr(letBody, env.deriv(vars))
     })
-
+    .set("lambda", function (tail: AstNode, env: Env): AstNode {
+        // if (!isList(tail) || length(tail) != 2) {
+        //     error("let must have a list of define and a value")
+        //     return null
+        // }
+        // lambda (x) body
+        const varList = car(tail)
+        // todo check varList all be names
+        return cons("lambda", tail)
+    })
+    .set("+", (tail: AstNode, env: Env): AstNode => {
+        // todo check number
+        // todo support many expressions
+        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        return <number>v1 + <number>v2
+    })
+    .set("-", (tail: AstNode, env: Env): AstNode => {
+        // todo check number
+        // todo support many expressions
+        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        return <number>v1 - <number>v2
+    })
+    .set("*", (tail: AstNode, env: Env): AstNode => {
+        // todo check number
+        // todo support many expressions
+        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        return <number>v1 * <number>v2
+    })
+    .set("/", (tail: AstNode, env: Env): AstNode => {
+        // todo check number
+        // todo support many expressions
+        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        return <number>v1 / <number>v2
+    })
 
 export { functions }
 
@@ -124,8 +157,10 @@ export function atom(v: AstNode): boolean {
 }
 export function eq(v1: AstNode, v2: AstNode): boolean {
     if (v1 === null && v2 === null) return true;
-    if (typeof v1 === "string" && typeof v2 === "string") return v1 === v2;
-    if (typeof v1 === "number" && typeof v2 === "number") return v1 === v2;
+    if (typeof v1 === "string" && typeof v2 === "string")
+        return v1 === v2;
+    if (typeof v1 === "number" && typeof v2 === "number")
+        return v1 === v2;
     return false;
 }
 export function car(v: AstNode): AstNode {
@@ -156,6 +191,10 @@ export function cons(v1: AstNode, v2: AstNode): Pair {
 export function cadr(v: AstNode): AstNode {
     // todo error checking
     return (<Pair>(<Pair>v)[1])[0]
+}
+export function caddr(v: AstNode): AstNode {
+    // todo error checking
+    return (<Pair>(<Pair>(<Pair>v)[1])[1])[0]
 }
 export function length(v: AstNode): number {
     let i = 0

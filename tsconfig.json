@@ -4,10 +4,10 @@
         "src/parse.ts",
         "src/eval.ts",
         "src/error.ts",
-        "src/primary.ts",
+        "src/primary.ts"
     ],
     "compilerOptions": {
         "noImplicitAny": true,
-        "target": "es2015",
+        "target": "es2015"
     }
 }
