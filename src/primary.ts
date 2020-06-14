@@ -131,9 +131,25 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // }
         // lambda (x) body
         const name = car(tail)
-        // todo check name is name
-        const v = evalExpr(cadr(tail), env)
-        env.set(<string>name, v)
+        if (name === null) {
+            error("name can not be nil")
+            return null
+        }
+        if (typeof name === "number") {
+            error("name can not be a number")
+        }
+        if (typeof name === "string") {
+            define(name, cadr(tail), env)
+        }
+        const realName = car(name)
+        if (typeof realName === "string") {
+            const parameters = cdr(name)
+            const lambda = cons("lambda", cons(parameters, cdr(tail)))
+            define(realName, lambda, env)
+        } else {
+            error("define name must be atom")
+        }
+        // todo define body not empty
         return null
     })
     .set("+", (tail: AstNode, env: Env): AstNode => {
@@ -231,4 +247,8 @@ export function isList(v: AstNode): boolean {
 }
 export function isNull(value: AstNode): boolean {
     return value === null;
+}
+function define(name: string, node: AstNode, env: Env) {
+    const v = evalExpr(node, env)
+    env.set(<string>name, v)
 }

@@ -29,8 +29,9 @@ export class Env {
         }
         return null
     }
-    set(name: string, value: AstNode) {
+    set(name: string, value: AstNode):Env {
         this.vars.set(name, value)
+        return this
     }
     deriv(vars: Map<string, AstNode>): Env {
         return new Env(this, vars)
