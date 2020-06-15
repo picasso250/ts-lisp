@@ -1,7 +1,6 @@
 import { error } from './error'
+import { AstNode } from './ast'
 
-export type AstNode = string | number | null | Pair
-export type Pair = [AstNode, AstNode]
 export function parse(code: string): Array<AstNode> {
     const lst0 = parsePass0(code);
     const lst1 = parsePass1(lst0)

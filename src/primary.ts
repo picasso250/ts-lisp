@@ -1,19 +1,22 @@
-import { AstNode, Pair } from "./parse"
+import { AstNode, Pair, Value, Clojure } from "./ast"
 import { Env, evalExpr } from "./eval"
 import { error } from "./error"
 
 const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
-    .set("quote", (tail: AstNode, env: Env): AstNode => {
+    .set("quote", (tail: AstNode, env: Env): Value => {
+        // in fact, quote will never return a Clojure
         return car(tail)
     })
-    .set("atom", (tail: AstNode, env: Env): AstNode => {
+    .set("atom", (tail: AstNode, env: Env): Value => {
         // if (!isList(tail)) {
         //     error("call atom with a list please")
         //     return null
         // }
-        return atom(evalExpr(car(tail), env)) ? "#t" : null
+        const p = car(tail)
+        const v = evalExpr(<AstNode>p, env)
+        return !isPair(v) ? "#t" : null
     })
-    .set("eq", (tail: AstNode, env: Env): AstNode => {
+    .set("eq", (tail: AstNode, env: Env): Value => {
         // if (!isList(tail)) {
         //     error("call eq with a list please")
         //     return null
@@ -22,10 +25,11 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         //     error("eq must have 2 parameters")
         //     return null
         // }
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return eq(v1, v2) ? "#t" : null
     })
-    .set("car", (tail: AstNode, env: Env): AstNode => {
+    .set("car", (tail: AstNode, env: Env): Value => {
         // if (v === null) {
         //     error("car of nil");
         //     return null;
@@ -33,11 +37,11 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // if (atom(v)) {
         //     error("car of atom");
         // }
-        const v = evalExpr(car(tail), env)
+        const v = evalExpr(<AstNode>car(tail), env)
         // todo check type
         return (<Pair>v)[0]
     })
-    .set("cdr", (tail: AstNode, env: Env): AstNode => {
+    .set("cdr", (tail: AstNode, env: Env): Value => {
         // if (v === null) {
         //     error("cdr of nil");
         //     return null;
@@ -45,11 +49,11 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // if (atom(v)) {
         //     error("cdr of atom");
         // }
-        const v = evalExpr(car(tail), env)
+        const v = evalExpr(<AstNode>car(tail), env)
         // todo check type
         return (<Pair>v)[1]
     })
-    .set("cons", (tail: AstNode, env: Env): AstNode => {
+    .set("cons", (tail: AstNode, env: Env): Value => {
         // if (!isList(tail)) {
         //     error("call cons with a list please")
         //     return null
@@ -58,10 +62,11 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         //     error("cons must have 2 parameters")
         //     return null
         // }
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return cons(v1, v2)
     })
-    .set("cond", (tail: AstNode, env: Env): AstNode => {
+    .set("cond", (tail: AstNode, env: Env): Value => {
         // if (!isList(tail) || length(tail) != 1) {
         //     error("cond must have a list of conditions")
         //     return null
@@ -74,18 +79,18 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
             //     error("cond-expr must be list of 2 elements")
             //     return null
             // }
-            const c = evalExpr(car(<Pair>condExpr), newEnv)
+            const c = evalExpr(<AstNode>car(<Pair>condExpr), newEnv)
             if (c !== null) {
-                const v = evalExpr(cadr(<Pair>condExpr), env)
+                const v = evalExpr(<AstNode>cadr(<Pair>condExpr), env)
                 return v
             }
-            condList = cdr(<Pair>condList)
+            condList = <AstNode>cdr(<Pair>condList)
         }
         // error("all cond failed")
         return null
     })
     // let is unnessary, but for teach purpose, we leave it here
-    .set("let", function (tail: AstNode, env: Env): AstNode {
+    .set("let", function (tail: AstNode, env: Env): Value {
         // if (!isList(tail) || length(tail) != 2) {
         //     error("let must have a list of define and a value")
         //     return null
@@ -108,13 +113,13 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
                 error("let-define must have a name")
                 return null
             }
-            vars.set(varName, evalExpr(cadr(<Pair>def), env))
+            vars.set(varName, evalExpr(<AstNode>cadr(<Pair>def), env))
             defList = cdr(<Pair>defList)
         }
         const letBody = cadr(<Pair>tail)
-        return evalExpr(letBody, env.deriv(vars))
+        return evalExpr(<AstNode>letBody, env.deriv(vars))
     })
-    .set("lambda", function (tail: AstNode, env: Env): AstNode {
+    .set("lambda", function (tail: AstNode, env: Env): Value {
         // if (!isList(tail) || length(tail) != 2) {
         //     error("let must have a list of define and a value")
         //     return null
@@ -122,9 +127,9 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // lambda (x) body
         const varList = car(tail)
         // todo check varList all be names
-        return cons("lambda", tail)
+        return [cons("lambda", tail), env]
     })
-    .set("define", function (tail: AstNode, env: Env): AstNode {
+    .set("define", function (tail: AstNode, env: Env): Value {
         // if (!isList(tail) || length(tail) != 2) {
         //     error("let must have a list of define and a value")
         //     return null
@@ -139,7 +144,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
             error("name can not be a number")
         }
         if (typeof name === "string") {
-            define(name, cadr(tail), env)
+            define(name, <AstNode>cadr(tail), env)
             return null
         }
         const realName = car(name)
@@ -156,34 +161,41 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
     .set("+", (tail: AstNode, env: Env): AstNode => {
         // todo check number
         // todo support many expressions
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return <number>v1 + <number>v2
     })
     .set("-", (tail: AstNode, env: Env): AstNode => {
         // todo check number
         // todo support many expressions
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return <number>v1 - <number>v2
     })
     .set("*", (tail: AstNode, env: Env): AstNode => {
         // todo check number
         // todo support many expressions
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return <number>v1 * <number>v2
     })
     .set("/", (tail: AstNode, env: Env): AstNode => {
         // todo check number
         // todo support many expressions
-        let [v1, v2] = [evalExpr(car(tail), env), evalExpr(cadr(tail), env)]
+        let [_v1, _v2] = [car(tail), cadr(<Pair>tail)]
+        let [v1, v2] = [evalExpr(<AstNode>_v1, env), evalExpr(<AstNode>_v2, env)]
         return <number>v1 / <number>v2
     })
 
 export { functions }
 
-export function atom(v: AstNode): boolean {
+export function isPair(v: Value): boolean {
+    return !atom(v) && !isClosure(v)
+}
+export function atom(v: Value): boolean {
     return v === null || typeof v === "string" || typeof v === "number";
 }
-export function eq(v1: AstNode, v2: AstNode): boolean {
+export function eq(v1: Value, v2: Value): boolean {
     if (v1 === null && v2 === null) return true;
     if (typeof v1 === "string" && typeof v2 === "string")
         return v1 === v2;
@@ -191,7 +203,7 @@ export function eq(v1: AstNode, v2: AstNode): boolean {
         return v1 === v2;
     return false;
 }
-export function car(v: AstNode): AstNode {
+export function car(v: Value): Value {
     // if (v === null) {
     //     error("car of nil");
     //     return null;
@@ -201,7 +213,7 @@ export function car(v: AstNode): AstNode {
     // }
     return (<Pair>v)[0]
 }
-export function cdr(v: AstNode): AstNode {
+export function cdr(v: Value): Value {
     // if (v === null) {
     //     error("cdr of nil");
     //     return null;
@@ -211,24 +223,24 @@ export function cdr(v: AstNode): AstNode {
     // }
     return (<Pair>v)[1]
 }
-export function cons(v1: AstNode, v2: AstNode): Pair {
+export function cons(v1: Value, v2: Value): Pair {
     return [v1, v2]
 }
 
 // ---- below is not primary, but for convenience
-export function cadr(v: AstNode): AstNode {
+export function cadr(v: Value): Value {
     // todo error checking
     return (<Pair>(<Pair>v)[1])[0]
 }
-export function cddr(v: AstNode): AstNode {
+export function cddr(v: Value): Value {
     // todo error checking
     return (<Pair>(<Pair>v)[1])[1]
 }
-export function caddr(v: AstNode): AstNode {
+export function caddr(v: Value): Value {
     // todo error checking
     return (<Pair>(<Pair>(<Pair>v)[1])[1])[0]
 }
-export function length(v: AstNode): number {
+export function length(v: Value): number {
     let i = 0
     while (v !== null) {
         if (atom(v)) {
@@ -246,12 +258,18 @@ export function isList(v: AstNode): boolean {
         if (atom(v)) {
             return false
         }
-        [, v] = <Pair>v;
+        let [, _v] = <Pair>v;
+        v = <AstNode>_v
     }
     return true
 }
 export function isNull(value: AstNode): boolean {
     return value === null;
+}
+export function isClosure(p: Value): boolean {
+    if (atom(p)) return false
+    let [lmd, env] = <Clojure>p
+    return car(lmd) === "lambda" && env instanceof Env
 }
 function define(name: string, node: AstNode, env: Env) {
     // todo name not over write system functions

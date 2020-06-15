@@ -1,4 +1,6 @@
-import { parse, AstNode } from "./parse";
+
+import { AstNode } from "./ast";
+import { parse } from "./parse";
 import { evalLisp } from "./eval";
 import { car, cdr, atom } from "./primary";
 function showCodeResults(codeName: string, resName: string) {
@@ -64,10 +66,13 @@ function astToString(ast: AstNode, isShort: boolean = false): string {
     }
     const right = cdr(ast)
     if (right === null)
-        return astToStringInner(astToString(car(ast)), isShort)
-    if (!atom(right))
-        return astToStringInner(astToString(car(ast)) + " " + astToString(right, true), isShort)
-    return astToStringInner(astToString(car(ast)) + " . " + astToString(right), isShort)
+        return astToStringInner(astToString(<AstNode>car(ast)), isShort)
+    if (!atom(right)) {
+        const inner = astToString(<AstNode>car(ast)) + " " + astToString(<AstNode>right, true)
+        return astToStringInner(inner, isShort)
+    }
+    const inner = astToString(<AstNode>car(ast)) + " . " + astToString(<AstNode>right)
+    return astToStringInner(inner, isShort)
 }
 function astToStringInner(represent: string, isShort: boolean): string {
     if (isShort) return represent
@@ -86,5 +91,5 @@ function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
 }
 
 bindRun("run");
-test(["add", "cond", "list", "define"]);
-// test(["define"]);
+// test(["add", "cond", "list", "define","prog"]);
+test(["prog"]);

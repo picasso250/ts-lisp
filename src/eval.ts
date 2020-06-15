@@ -1,5 +1,5 @@
-import { AstNode, Pair } from "./parse"
-import { functions, car, cadr, cddr, caddr, atom, cdr } from "./primary"
+import { AstNode, Pair, Value, Clojure } from "./ast"
+import { functions, car, cadr, cddr, caddr, atom, cdr, isClosure } from "./primary"
 import { error } from "./error"
 
 export function evalLisp(astList: Array<AstNode>): Array<String> {
@@ -12,42 +12,41 @@ export function evalLisp(astList: Array<AstNode>): Array<String> {
 }
 export class Env {
     parent: Env | null
-    vars: Map<string, AstNode>
-    constructor(parent: Env | null, vars: Map<string, AstNode> = new Map<string, AstNode>()) {
+    vars: Map<string, Value>
+    constructor(parent: Env | null, vars: Map<string, Value> = new Map<string, Value>()) {
         this.parent = parent;
         this.vars = vars
     }
     has(name: string): boolean {
         return this.vars.has(name) || (this.parent !== null && this.parent.has(name))
     }
-    get(name: string): AstNode {
+    get(name: string): Value {
         if (this.vars.has(name)) {
-            return <AstNode>(this.vars.get(name))
+            return <Value>(this.vars.get(name))
         }
         if (this.parent !== null) {
             return this.parent.get(name)
         }
         return null
     }
-    set(name: string, value: AstNode): Env {
-        this.vars.set(name, value)
+    set(name: string, Value: Value): Env {
+        this.vars.set(name, Value)
         return this
     }
-    deriv(vars: Map<string, AstNode>): Env {
+    deriv(vars: Map<string, Value>): Env {
         return new Env(this, vars)
     }
+
 }
 
-type value = AstNode
-
-export function evalExpr(node: AstNode, env: Env): value {
+export function evalExpr(node: AstNode, env: Env): Value {
 
     if (node === null) return null
 
     // 7 primary
     if (!atom(node)) {
         const [headRaw, tail] = <Pair>node
-        let head = evalExpr(headRaw, env)
+        let head = evalExpr(<AstNode>headRaw, env)
         if (head === null) {
             error("nil can not be a function")
             return null
@@ -59,14 +58,17 @@ export function evalExpr(node: AstNode, env: Env): value {
         if (typeof head === "string") {
             if (functions.has(head)) {
                 const func = functions.get(head)
-                return (<(tail: AstNode, env: Env) => AstNode>func)(tail, env)
+                return (<(tail: AstNode, env: Env) => AstNode>func)(<AstNode>tail, env)
+            } else {
+                error("no function found", head)
+                return null
             }
         }
         // lambda
-        if (isLambda(<Pair>head)) {
-            return apply(head, tail, env)
+        if (isClosure(head)) {
+            return apply(<Clojure>head, <AstNode>tail, env)
         } else {
-            error("Invalid function (a list but not lambda)")
+            error("Invalid function (a list but not lambda)", node)
             return null
         }
     } else if (typeof node === "string") {
@@ -85,12 +87,13 @@ export function evalExpr(node: AstNode, env: Env): value {
         return null
     }
 }
-function apply(func: AstNode, tail: AstNode, env: Env): AstNode {
+function apply(func: Clojure, tail: AstNode, env: Env): Value {
     // if (!isList(tail) || length(tail) != 2) {
-    //     error("let must have a list of define and a value")
+    //     error("let must have a list of define and a Value")
     //     return null
     // }
-    let defNameList = cadr(<Pair>func);
+    let [lmd, envClos] = func;
+    let defNameList = cadr(<Pair>lmd);
     // if (!isList(defNameList) || length(defNameList) < 1) {
     //     error("define list must have at leat one define")
     //     return null
@@ -102,26 +105,24 @@ function apply(func: AstNode, tail: AstNode, env: Env): AstNode {
             error("parameter must be a name")
             return null
         }
-        vars.set(varName, evalExpr(car(<Pair>tail), env))
-        tail = cdr(<Pair>tail)
+        vars.set(varName, evalExpr(<AstNode>car(<Pair>tail), env))
+        tail = <AstNode>cdr(<Pair>tail)
         defNameList = cdr(<Pair>defNameList)
     }
-    let body = cddr(<Pair>func) // todo: check body exists
+    let body = cddr(<Pair>lmd) // todo: check body exists
     let r = null
-    let newEnv = env.deriv(vars)
+    let newEnv = envClos.deriv(vars)
     // support multi body
     while (body !== null) {
-        r = evalExpr(car(body), newEnv)
+        r = evalExpr(<AstNode>car(<AstNode>body), newEnv)
         body = cdr(<Pair>body)
     }
     return r
 }
-function isLambda(p: Pair) {
-    return car(p) === "lambda"
-}
-function valueToString(value: value): string {
-    if (value === null) {
+
+function valueToString(Value: Value): string {
+    if (Value === null) {
         return "nil"
     }
-    return value.toString()
+    return Value.toString()
 }
