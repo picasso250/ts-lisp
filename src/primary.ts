@@ -30,14 +30,24 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         return eq(v1, v2) ? "#t" : null
     })
     .set("car", (tail: AstNode, env: Env): Value => {
-        // if (v === null) {
-        //     error("car of nil");
-        //     return null;
-        // }
-        // if (atom(v)) {
-        //     error("car of atom");
-        // }
-        const v = evalExpr(<AstNode>car(tail), env)
+        if (tail === null) {
+            error("car of nothing");
+            return null;
+        }
+        let lst=car(tail)
+        const v = evalExpr(<AstNode>lst, env)
+        if (v === null){
+            error("car of empty list");
+            return null;
+        }
+        if (atom(v)) {
+            error("car of atom");
+            return null;
+        }
+        if(isClosure(v)){
+            error("car of closure");
+            return null;
+        }
         // todo check type
         return (<Pair>v)[0]
     })

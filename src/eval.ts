@@ -99,15 +99,21 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value {
     //     return null
     // }
     let vars = new Map()
-    while (defNameList !== null) {
-        const varName = car(<Pair>defNameList)
-        if (typeof varName !== "string") {
-            error("parameter must be a name")
-            return null
+    if (typeof defNameList === "string") {
+        // lambda lst
+        // todo check tail is list
+        vars.set(defNameList, evalEvery(<Pair>tail, env))
+    } else {
+        while (defNameList !== null) {
+            const varName = car(<Pair>defNameList)
+            if (typeof varName !== "string") {
+                error("parameter must be a name")
+                return null
+            }
+            vars.set(varName, evalExpr(<AstNode>car(<Pair>tail), env))
+            tail = <AstNode>cdr(<Pair>tail)
+            defNameList = cdr(<Pair>defNameList)
         }
-        vars.set(varName, evalExpr(<AstNode>car(<Pair>tail), env))
-        tail = <AstNode>cdr(<Pair>tail)
-        defNameList = cdr(<Pair>defNameList)
     }
     let body = cddr(<Pair>lmd) // todo: check body exists
     let r = null
@@ -119,8 +125,16 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value {
     }
     return r
 }
+function evalEvery(lst: Pair, env: Env): Pair {
+    let ret = lst
+    while (lst !== null) {
+        lst[0] = evalExpr(<AstNode>car(lst), env)
+        lst = <Pair>cdr(<Pair>lst)
+    }
+    return ret
+}
 
-function valueToString(Value: Value): string {
+export function valueToString(Value: Value): string {
     if (Value === null) {
         return "nil"
     }
@@ -128,7 +142,7 @@ function valueToString(Value: Value): string {
     return astToString(<AstNode>Value)
 }
 
-function astToString(ast: AstNode, isShort: boolean = false): string {
+export function astToString(ast: AstNode, isShort: boolean = false): string {
     if (ast === null) {
         return "nil"
     }

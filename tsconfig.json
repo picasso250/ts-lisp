@@ -10,6 +10,7 @@
     "compilerOptions": {
         "noImplicitAny": true,
         "target": "es2015",
-        "strictNullChecks":true
+        "strictNullChecks": true,
+        "esModuleInterop": true
     }
 }

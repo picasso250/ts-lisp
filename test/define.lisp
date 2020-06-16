@@ -8,3 +8,9 @@
   (define a 1)
   (+ x a))
 (add1 4)
+(define (list. . lst)
+  (cond 
+    ((eq lst '()) '())
+    (else (cons (car lst) 
+                (cdr lst)))))
+(list. 1 2 '(1 4))

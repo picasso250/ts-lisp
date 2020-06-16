@@ -19,7 +19,7 @@ function parsePass01(code: string): Array<string> {
             ret.push(line)
         }
     }
-    console.log(ret)
+    // console.log(ret)
     return ret
 }
 // lines to tokens
