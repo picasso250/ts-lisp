@@ -124,5 +124,31 @@ function valueToString(Value: Value): string {
     if (Value === null) {
         return "nil"
     }
-    return Value.toString()
+    // todo lambda
+    return astToString(<AstNode>Value)
+}
+
+function astToString(ast: AstNode, isShort: boolean = false): string {
+    if (ast === null) {
+        return "nil"
+    }
+    if (typeof ast == "string") {
+        return ast
+    }
+    if (typeof ast == "number") {
+        return ast.toString()
+    }
+    const right = cdr(ast)
+    if (right === null)
+        return astToStringInner(astToString(<AstNode>car(ast)), isShort)
+    if (!atom(right)) {
+        const inner = astToString(<AstNode>car(ast)) + " " + astToString(<AstNode>right, true)
+        return astToStringInner(inner, isShort)
+    }
+    const inner = astToString(<AstNode>car(ast)) + " . " + astToString(<AstNode>right)
+    return astToStringInner(inner, isShort)
+}
+function astToStringInner(represent: string, isShort: boolean): string {
+    if (isShort) return represent
+    return "(" + represent + ")"
 }

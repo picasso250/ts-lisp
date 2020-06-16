@@ -2,16 +2,31 @@ import { error } from './error'
 import { AstNode } from './ast'
 
 export function parse(code: string): Array<AstNode> {
-    const lst0 = parsePass0(code);
+    const lines = parsePass01(code);
+    const lst0 = parsePass0(lines);
     const lst1 = parsePass1(lst0)
     const r2 = parsePass2(lst1)
     const r3 = parsePass3(r2)
     return r3;
 }
 
-function parsePass0(code: string): Array<string> {
+// comment
+function parsePass01(code: string): Array<string> {
+    let res = <Array<string>>code.match(/[^\r\n]+/g);
+    let ret = []
+    for (let line of res) {
+        if (!line.match(/^ *;/)) {
+            ret.push(line)
+        }
+    }
+    console.log(ret)
+    return ret
+}
+// lines to tokens
+function parsePass0(lines: Array<string>): Array<string> {
     let word = "";
     let ret = [];
+    const code = lines.join("\n");
     for (let i = 0; i < code.length; i++) {
         const c = code.charAt(i);
         if (isSpace(c)) {
@@ -41,6 +56,7 @@ function parsePass1(tokens: Array<string>): stringTree {
     let [i, v] = parsePass1Inner(0, tokens, [])
     return v;
 }
+
 type atomOrPair = string | null | [atomOrPair, atomOrPair]
 function parsePass2(st: stringTree): Array<atomOrPair> {
     let ret = []
@@ -85,8 +101,12 @@ function toAtomOrPair(st: stringTree): atomOrPair {
         return st
     }
     // (st[0] == "(") 
+    // todo check
     if (st.length == 2) {
         return null
+    }
+    if (st.length == 5 && st[2] === ".") {
+        return [toAtomOrPair(st[1]), toAtomOrPair(st[3])]
     }
     let newSt = st.slice(1)
     newSt[0] = "("

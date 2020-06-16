@@ -42,41 +42,16 @@ function test(files: Array<string>) {
                             console.log("   got:", r)
                             console.log("should:", res)
                             console.log("code:", code)
-                            console.log("ast:")
-                            for (const ast of astList) {
-                                console.log(astToString(ast))
-                            }
+                            // console.log("ast:")
+                            // for (const ast of astList) {
+                            //     console.log(astToString(ast))
+                            // }
                         } else {
                             console.log("test pass", file)
                         }
                     })
             });
     }
-}
-
-function astToString(ast: AstNode, isShort: boolean = false): string {
-    if (ast === null) {
-        return "nil"
-    }
-    if (typeof ast == "string") {
-        return ast
-    }
-    if (typeof ast == "number") {
-        return ast.toString()
-    }
-    const right = cdr(ast)
-    if (right === null)
-        return astToStringInner(astToString(<AstNode>car(ast)), isShort)
-    if (!atom(right)) {
-        const inner = astToString(<AstNode>car(ast)) + " " + astToString(<AstNode>right, true)
-        return astToStringInner(inner, isShort)
-    }
-    const inner = astToString(<AstNode>car(ast)) + " . " + astToString(<AstNode>right)
-    return astToStringInner(inner, isShort)
-}
-function astToStringInner(represent: string, isShort: boolean): string {
-    if (isShort) return represent
-    return "(" + represent + ")"
 }
 
 function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
@@ -91,5 +66,5 @@ function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
 }
 
 bindRun("run");
-// test(["add", "cond", "list", "define","prog"]);
-test(["prog"]);
+// test(["add", "cond", "list", "define", "prog"]);
+// test(["prog"]);
