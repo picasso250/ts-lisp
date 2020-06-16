@@ -1,5 +1,5 @@
 import { error } from './error'
-import { AstNode } from './ast'
+import { AstNode, Pair } from './ast'
 
 export function parse(code: string): Array<AstNode> {
     const lines = parsePass01(code);
@@ -87,7 +87,7 @@ function addNumberType(ap: atomOrPair): AstNode {
         }
     } else {
         const [left, right] = ap
-        return [addNumberType(left), addNumberType(right)]
+        return new Pair(addNumberType(left), addNumberType(right))
     }
     return ap
 }

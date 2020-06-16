@@ -3,10 +3,11 @@ import { AstNode } from "./ast";
 import { parse } from "./parse";
 import { evalLisp } from "./eval";
 import { car, cdr, atom } from "./primary";
-function showCodeResults(codeName: string, resName: string) {
+
+function showCodeResults(codeName: string, resName: string, prelude: string) {
     const code = document.getElementById(codeName);
     if ((<HTMLInputElement>code).value) {
-        const astList = parse((<HTMLInputElement>code).value)
+        const astList = parse(prelude).concat(parse((<HTMLInputElement>code).value))
         console.log(astList)
         const r = evalLisp(astList)
         console.log(r)
@@ -19,10 +20,15 @@ function showCodeResults(codeName: string, resName: string) {
 }
 function bindRun(runName: string) {
     const run = document.getElementById(runName);
-    if (run !== null)
-        run.addEventListener("click", function () {
-            showCodeResults("code", "res");
-        });
+    if (run !== null) {
+        fetch("../src/" + "sicp" + '.lisp')
+            .then(response => response.text())
+            .then(code => {
+                run.addEventListener("click", function () {
+                    showCodeResults("code", "res", code);
+                });
+            })
+    }
 }
 
 function test(files: Array<string>) {

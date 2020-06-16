@@ -44,8 +44,9 @@ export function evalExpr(node: AstNode, env: Env): Value {
     if (node === null) return null
 
     // 7 primary
-    if (!atom(node)) {
-        const [headRaw, tail] = <Pair>node
+    if (node instanceof Pair) {
+        const headRaw = node.left
+        const tail = node.right
         let head = evalExpr(<AstNode>headRaw, env)
         if (head === null) {
             error("nil can not be a function")
@@ -92,7 +93,8 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value {
     //     error("let must have a list of define and a Value")
     //     return null
     // }
-    let [lmd, envClos] = func;
+    let lmd = func.lambda
+    let envClos = func.env;
     let defNameList = cadr(<Pair>lmd);
     // if (!isList(defNameList) || length(defNameList) < 1) {
     //     error("define list must have at leat one define")
@@ -128,7 +130,7 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value {
 function evalEvery(lst: Pair, env: Env): Pair {
     let ret = lst
     while (lst !== null) {
-        lst[0] = evalExpr(<AstNode>car(lst), env)
+        lst.left = evalExpr(<AstNode>car(lst), env)
         lst = <Pair>cdr(<Pair>lst)
     }
     return ret

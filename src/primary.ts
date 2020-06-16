@@ -1,5 +1,5 @@
 import { AstNode, Pair, Value, Clojure } from "./ast"
-import { Env, evalExpr } from "./eval"
+import { Env, evalExpr, valueToString } from "./eval"
 import { error } from "./error"
 
 const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
@@ -34,22 +34,26 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
             error("car of nothing");
             return null;
         }
-        let lst=car(tail)
+        let lst = car(tail)
         const v = evalExpr(<AstNode>lst, env)
-        if (v === null){
+        if (v === null) {
             error("car of empty list");
             return null;
         }
         if (atom(v)) {
-            error("car of atom");
+            error("car of atom", valueToString(lst), valueToString(v));
             return null;
         }
-        if(isClosure(v)){
+        if (isClosure(v)) {
             error("car of closure");
             return null;
         }
-        // todo check type
-        return (<Pair>v)[0]
+        if (v instanceof Pair) {
+            return v.left
+        } else {
+            error("car must be pair")
+            return null
+        }
     })
     .set("cdr", (tail: AstNode, env: Env): Value => {
         // if (v === null) {
@@ -61,7 +65,11 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // }
         const v = evalExpr(<AstNode>car(tail), env)
         // todo check type
-        return (<Pair>v)[1]
+        if (v instanceof Pair)
+            return v.right
+        else
+            error("cdr of pair");
+        return null;
     })
     .set("cons", (tail: AstNode, env: Env): Value => {
         // if (!isList(tail)) {
@@ -137,7 +145,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => AstNode> = new Map()
         // lambda (x) body
         const varList = car(tail)
         // todo check varList all be names
-        return [cons("lambda", tail), env]
+        return new Clojure(cons("lambda", tail), env)
     })
     .set("define", function (tail: AstNode, env: Env): Value {
         // if (!isList(tail) || length(tail) != 2) {
@@ -221,7 +229,7 @@ export function car(v: Value): Value {
     // if (atom(v)) {
     //     error("car of atom");
     // }
-    return (<Pair>v)[0]
+    return (<Pair>v).left;
 }
 export function cdr(v: Value): Value {
     // if (v === null) {
@@ -231,45 +239,46 @@ export function cdr(v: Value): Value {
     // if (atom(v)) {
     //     error("cdr of atom");
     // }
-    return (<Pair>v)[1]
+    return (<Pair>v).right
 }
 export function cons(v1: Value, v2: Value): Pair {
-    return [v1, v2]
+    return new Pair(v1, v2)
 }
 
 // ---- below is not primary, but for convenience
 export function cadr(v: Value): Value {
     // todo error checking
-    return (<Pair>(<Pair>v)[1])[0]
+    return (<Pair>(<Pair>v).right).left
 }
 export function cddr(v: Value): Value {
     // todo error checking
-    return (<Pair>(<Pair>v)[1])[1]
+    return (<Pair>(<Pair>v).right).right
 }
 export function caddr(v: Value): Value {
     // todo error checking
-    return (<Pair>(<Pair>(<Pair>v)[1])[1])[0]
+    return (<Pair>(<Pair>(<Pair>v).right).right).left
 }
 export function length(v: Value): number {
     let i = 0
     while (v !== null) {
-        if (atom(v)) {
+        if (!(v instanceof Pair)) {
             error("length must be pair, atom given")
             break
         }
         i++
-        [, v] = <Pair>v;
+        v = (<Pair>v).right;
     }
     return i
 }
 export function isList(v: AstNode): boolean {
     if (v === null) return true
     while (v !== null) {
-        if (atom(v)) {
+        if (!(v instanceof Pair)) {
             return false
         }
-        let [, _v] = <Pair>v;
-        v = <AstNode>_v
+        // let [, _v] = <Pair>v;
+        // v = <AstNode>_v
+        v = <AstNode>((<Pair>v).right);
     }
     return true
 }
@@ -278,8 +287,7 @@ export function isNull(value: AstNode): boolean {
 }
 export function isClosure(p: Value): boolean {
     if (atom(p)) return false
-    let [lmd, env] = <Clojure>p
-    return car(lmd) === "lambda" && env instanceof Env
+    return p instanceof Clojure
 }
 function define(name: string, node: AstNode, env: Env) {
     // todo name not over write system functions
