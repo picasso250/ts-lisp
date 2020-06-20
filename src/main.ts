@@ -7,7 +7,8 @@ import { car, cdr, atom } from "./primary";
 function showCodeResults(codeName: string, resName: string, prelude: string) {
     const code = document.getElementById(codeName);
     if ((<HTMLInputElement>code).value) {
-        const astList = parse(prelude).concat(parse((<HTMLInputElement>code).value))
+        // const astList = parse(prelude).concat(parse((<HTMLInputElement>code).value))
+        const astList = parse((<HTMLInputElement>code).value)
         console.log(astList)
         const r = evalLisp(astList)
         console.log(r)

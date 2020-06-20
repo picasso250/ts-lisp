@@ -7,3 +7,9 @@
     (else      (cons 
                 (car lst) 
                 (cdr lst)))))
+(define (list  lst) 
+  (cond 
+    ((eq '() lst) '())
+    (else      (cons 
+                (car lst) 
+                (cdr lst)))))

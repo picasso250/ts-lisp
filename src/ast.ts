@@ -1,8 +1,10 @@
 import { Env } from "./eval"
+import { Token } from "./parse"
 import { atom, isClosure } from "./primary"
 import { string } from "../node_modules/_@types_yargs@15.0.5@@types/yargs/index"
 
-export type AstNode = string | number | null | Pair
+export type AstNode = Token|Number | Pair
+
 export class Pair {
     left: Value
     right: Value
