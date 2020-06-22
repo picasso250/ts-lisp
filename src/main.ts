@@ -15,10 +15,14 @@ function showCodeResults(codeName: string, resName: string, prelude: string) {
         }
         console.log(astList.toString())
         const r = evalLisp(<AstNode[]>astList)
-        console.log(r)
+        if(r instanceof Error){
+            console.log(r)
+            return
+        }
         const res = document.getElementById(resName);
-        if (res !== null)
-            res.innerText = r.join("\r\n")
+        if (res !== null){
+            res.innerText = (r as String[]).join("\r\n")
+        }
     } else {
         alert("Invalid textarea id")
     }
@@ -34,46 +38,6 @@ function bindRun(runName: string) {
                 });
             })
     }
-}
-
-function test(files: Array<string>) {
-    for (const file of files) {
-        fetch("../src/test/" + file + '.lisp')
-            .then(response => response.text())
-            .then(code => {
-                const astList = parse(code)
-                // console.log(astList)
-                const r = evalLisp(astList)
-                fetch("../src/test/" + file + '.res')
-                    .then(response => response.text())
-                    .then(data => {
-                        let res = data.match(/[^\r\n]+/g);;
-                        if (!arraysEqual(r, <Array<string>>res)) {
-                            console.log("!!!TEST FAIL!!!", file)
-                            console.log("   got:", r)
-                            console.log("should:", res)
-                            console.log("code:", code)
-                            // console.log("ast:")
-                            // for (const ast of astList) {
-                            //     console.log(astToString(ast))
-                            // }
-                        } else {
-                            console.log("test pass", file)
-                        }
-                    })
-            });
-    }
-}
-
-function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
-    if (a === b) return true;
-    if (a == null || b == null) return false;
-    if (a.length != b.length) return false;
-
-    for (var i = 0; i < a.length; ++i) {
-        if (a[i] !== b[i]) return false;
-    }
-    return true;
 }
 
 bindRun("run");
