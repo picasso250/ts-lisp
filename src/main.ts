@@ -9,8 +9,12 @@ function showCodeResults(codeName: string, resName: string, prelude: string) {
     if ((<HTMLInputElement>code).value) {
         // const astList = parse(prelude).concat(parse((<HTMLInputElement>code).value))
         const astList = parse((<HTMLInputElement>code).value)
-        console.log(astList)
-        const r = evalLisp(astList)
+        if (astList instanceof Error) {
+            console.log("error")
+            return
+        }
+        // console.log(astList)
+        const r = evalLisp(<AstNode[]>astList)
         console.log(r)
         const res = document.getElementById(resName);
         if (res !== null)

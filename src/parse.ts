@@ -1,6 +1,5 @@
 import { error, Error } from './error'
-import { AstNode, Pair } from './ast'
-import { cons } from './primary';
+import { AstNode, Pair, Clojure, Value } from './ast'
 
 export function parse(code: string): Array<AstNode> | Error {
     const lines = parsePass01(code);
@@ -14,6 +13,9 @@ export function parse(code: string): Array<AstNode> | Error {
         return r2.show()
     }
     const r3 = parsePass3(r2)
+    if (r3 instanceof Error) {
+        return r3.show()
+    }
     return r3;
 }
 
@@ -48,10 +50,13 @@ export class Token<T> {
         this.value = value
         this.lineNumber = lineNumber
     }
+    toString(): string {
+        return `${this.value}`
+    }
 }
 
 // lines to tokens
-function parsePass0(lines: Array<Line>): Array<Token> {
+function parsePass0(lines: Array<Line>): Array<Token<string>> {
     let word = "";
     let ret = [];
     // const code = lines.join("\n");
@@ -83,9 +88,9 @@ function parsePass0(lines: Array<Line>): Array<Token> {
     return ret;
 }
 
-type TokenTree = Token | Array<Token | TokenTree>
-
-function parsePass1(tokens: Array<Token>): TokenTree | Error {
+type TokenTree = Token<string> | Array<Token<string> | TokenTree>
+// tokens to token tree
+function parsePass1(tokens: Array<Token<string>>): TokenTree | Error {
     const a = parsePass1Inner(0, tokens, [])
     if (a instanceof Error) {
         return a
@@ -94,9 +99,9 @@ function parsePass1(tokens: Array<Token>): TokenTree | Error {
 }
 
 // 暂时的一个类型
-type atomOrPair = Token | [atomOrPair, atomOrPair]
-
-function parsePass2(st: TokenTree): Array<atomOrPair> | Error {
+type atomOrPair0 = Token<string> | Pair<atomOrPair0>
+// token tree to pair
+function parsePass2(st: TokenTree): Array<atomOrPair0> | Error {
     let ret = []
     if (st instanceof Token) {
         const a = toAtomOrPair(st)
@@ -115,35 +120,42 @@ function parsePass2(st: TokenTree): Array<atomOrPair> | Error {
     return ret
 }
 
-function parsePass3(lst: Array<atomOrPair>): Array<AstNode> {
+export type Atom = Atom0
+type Atom0 = Token<Number> | Token<string>
+export type atomOrPair1 = Atom0 | Pair<atomOrPair1>
+
+// num type
+function parsePass3(lst: Array<atomOrPair0>): Array<atomOrPair1> | Error {
     let ret = []
     for (let i = 0; i < lst.length; i++) {
         const node = addNumberType(lst[i])
+        if (node instanceof Error) {
+            return node
+        }
         ret.push(node)
     }
     return ret
 }
-function addNumberType(ap: atomOrPair): AstNode | Error {
+function addNumberType(ap: atomOrPair0): AstNode | Error {
     // if (ap === null)
     //     return ap;
     // else 
-    if ( ap instanceof Token) {
-        if (isDigit(ap.str.charAt(0))) {
-            const n = Number(ap.str)
+    if (ap instanceof Token) {
+        if (isDigit(ap.value.charAt(0))) {
+            const n = Number(ap.value)
             if (n === NaN) {
-                return new Error("not a number",ap.lineNumber,ap)
+                return new Error("not a number", ap.lineNumber, ap)
             }
-            return n
+            return new Token(n, ap.lineNumber)
         }
         return ap
     } else {
-        const [left, right] = ap
-        const l=addNumberType(left)
-        if (l instanceof Error){
+        const l = addNumberType(ap.left)
+        if (l instanceof Error) {
             return l
         }
-        const r=addNumberType(right)
-        if (r instanceof Error){
+        const r = addNumberType(ap.right)
+        if (r instanceof Error) {
             return r
         }
         return new Pair(l, r)
@@ -154,19 +166,24 @@ function isDigit(theNum: string): boolean {
     if (theMask.indexOf(theNum) == -1) return (false);
     return (true);
 }
-function lineNumberOfTokenTree(t: TokenTree): number {
-    if (t instanceof Token) {
-        return t.lineNumber
-    }
-    return lineNumberOfTokenTree(t[0])
+export interface LineNumberableAndStringable {
+    toString(): string
+    lineNumber: number;
 }
+
 function tokenTreetoString(t: TokenTree): string {
     if (t instanceof Token) {
-        return t.str
+        return t.value.toString()
     }
     return t.map(tokenTreetoString).join('')
 }
-function toAtomOrPair(st: TokenTree): atomOrPair | Error {
+function lineNumberOf(t: TokenTree): number {
+    if (t instanceof Token) {
+        return t.lineNumber
+    }
+    return lineNumberOf(t[0])
+}
+function toAtomOrPair(st: TokenTree): atomOrPair0 | Error {
     if (st instanceof Token) {
         return st
     }
@@ -174,11 +191,11 @@ function toAtomOrPair(st: TokenTree): atomOrPair | Error {
     // todo check
     if (st.length == 2) {
         if (!(st[0] instanceof Token) || tokenTreetoString(st) != "()") {
-            return new Error("should be ()", lineNumberOfTokenTree(st), st)
+            return new Error("should be ()", lineNumberOf(st), st)
         }
         return new Token("nil", st[0].lineNumber)
     }
-    if (st.length == 5 && st[2] instanceof Token && st[2].str === ".") {
+    if (st.length == 5 && st[2] instanceof Token && st[2].value === ".") {
         const left = toAtomOrPair(st[1])
         if (left instanceof Error) {
             return left
@@ -187,23 +204,23 @@ function toAtomOrPair(st: TokenTree): atomOrPair | Error {
         if (right instanceof Error) {
             return right
         }
-        return [left, right]
+        return new Pair(left, right)
     }
     const left = toAtomOrPair(st[1])
     if (left instanceof Error) {
         return left
     }
     let newSt = st.slice(1)
-    newSt[0] = new Token("(", lineNumberOfTokenTree(newSt[1]))
+    newSt[0] = new Token("(", lineNumberOf(newSt[1]))
     const right = toAtomOrPair(newSt)
     if (right instanceof Error) {
         return right
     }
-    return [left, right]
+    return new Pair(left, right)
 }
 
 function parsePass1Inner(
-    i: number, tokens: Array<Token>, begin: Array<Token>):
+    i: number, tokens: Array<Token<string>>, begin: Array<Token<string>>):
     [number, TokenTree] | Error {
 
     let ret: TokenTree = [...begin]
@@ -214,10 +231,10 @@ function parsePass1Inner(
         const tk = ((ln) =>
             (str: string) =>
                 new Token(str, ln))(token.lineNumber)
-        if (token.str == "'") {
+        if (token.value == "'") {
             willQuote = true
             willQuoteLine = token.lineNumber
-        } else if (token.str == "(") {
+        } else if (token.value == "(") {
             let v
             const a = parsePass1Inner(i + 1, tokens, [token])
             if (a instanceof Error) {
@@ -231,13 +248,13 @@ function parsePass1Inner(
                 ret.push(v)
             }
             continue
-        } else if (token.str == ")") {
+        } else if (token.value == ")") {
             if (willQuote) {
                 error("' before ) in line " + token.lineNumber, tokens)
                 willQuote = false
             }
             if ((!(ret[0] instanceof Token))
-                || (ret[0] instanceof Token && ret[0].str !== "(")) {
+                || (ret[0] instanceof Token && ret[0].value !== "(")) {
                 error("not open brace in line " + token.lineNumber, ret)
                 return [0, []];
             }
