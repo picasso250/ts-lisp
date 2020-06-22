@@ -2,7 +2,7 @@
 import { AstNode } from "./ast";
 import { parse } from "./parse";
 import { evalLisp } from "./eval";
-import { car, cdr, atom } from "./primary";
+import {  atom } from "./primary";
 
 function showCodeResults(codeName: string, resName: string, prelude: string) {
     const code = document.getElementById(codeName);
@@ -13,7 +13,7 @@ function showCodeResults(codeName: string, resName: string, prelude: string) {
             console.log("error")
             return
         }
-        // console.log(astList)
+        console.log(astList.toString())
         const r = evalLisp(<AstNode[]>astList)
         console.log(r)
         const res = document.getElementById(resName);

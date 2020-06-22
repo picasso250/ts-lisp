@@ -16,7 +16,7 @@ export class Pair<T extends LineNumberableAndStringable> {
     }
     toString(isShort: boolean = false): string {
         const leftString = (this.left.toString())
-        if (isNil(this.right))
+        if (this.right instanceof Token && this.right.value === "nil")
             return astToStringInner(leftString, isShort)
         if (this.right instanceof Pair) {
             const inner = leftString + " " + this.right.toString(true)

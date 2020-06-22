@@ -84,7 +84,7 @@ export function evalExpr(node: AstNode, env: Env): Value | Error | null {
             if (env.has(node.value)) {
                 return env.get(node.value)
             }
-            return new Error(`no var '${node.value}`, node.lineNumber, node)
+            return new Error(`no var '${node.value}'`, node.lineNumber, node)
         } else if (typeof node.value === "number") {
             return node
         } else {
@@ -107,16 +107,19 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value | Error {
     //     return null
     // }
     let vars = new Map()
-    if (typeof defNameList === "string") {
+    if (defNameList instanceof Token) {
+        if (typeof defNameList.value!== "string"){
+            return new Error("name must be a string", defNameList.lineNumber, defNameList)
+        }
         // lambda lst
         // todo check tail is list
         if (!isList(tail)) {
             return new Error("not a list", tail.lineNumber, tail)
         }
-        vars.set(defNameList, evalEvery(tail, env))
+        vars.set(defNameList.value, evalEvery(tail, env))
     } else {
         // lambda (a b c)
-        while (isNil(defNameList)) {
+        while (!isNil(defNameList)) {
             const varName = (defNameList as Pair<AstNode>).left
             if (!(varName instanceof Token)) {
                 return new Error("parameter must be a token", varName.lineNumber, varName)
@@ -136,7 +139,7 @@ function apply(func: Clojure, tail: AstNode, env: Env): Value | Error {
     let r = null
     let newEnv = envClos.deriv(vars)
     // support multi body
-    while (isNil(body)) {
+    while (!isNil(body)) {
         r = evalExpr(<AstNode>(body as Pair<AstNode>).left, newEnv)
         if (r instanceof Error) {
             return r

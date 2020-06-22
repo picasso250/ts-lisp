@@ -8,7 +8,7 @@ export class Error {
         this.info = info
     }
     show():Error {
-        console.error("line " + this.line + " :", this.msg, this.info)
+        console.error("line " + this.line + " :", this.msg, this.info.toString())
         return this
     }
 }

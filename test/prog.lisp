@@ -13,7 +13,7 @@
 
 (define len
   (lambda (lst)
-    (cond ((eq lst ()) 0)
+    (cond ((eq lst '()) 0)
           (else (+ 1 (len (cdr lst)))))))
 (len '(a b c))
 

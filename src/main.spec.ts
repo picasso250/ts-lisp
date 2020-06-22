@@ -6,7 +6,7 @@ import { makeNil, AstNode } from './ast'
 for (const name of ["add", "cond", "list", "define", "prog"]) {
     let data = fs.readFileSync("test/" + name + ".lisp")
     let should = fs.readFileSync("test/" + name + ".res")
-    let shouldRes = <Array<string>>(should.toString().match(/[^\r\n]+/g))
+    let shouldRes = <Array<String>>(should.toString().match(/[^\r\n]+/g))
 
     let exprsOrErr = parse(data.toString())
     test('test parse ' + name, () => {
@@ -24,8 +24,11 @@ for (const name of ["add", "cond", "list", "define", "prog"]) {
         break
     }
     const rs = rsOrErr as String[]
-    for (let i = 0; i < (exprs as AstNode[]).length; i++) {
-        test('should be ' + shouldRes[i] + ' when eval ' + (exprs[i]).toString(), () => {
+    // test('should be ' + shouldRes + ' when eval ' + (exprs).toString(), () => {
+    //     expect(rs).toStrictEqual(shouldRes)
+    // })
+    for (let i = 0; i < (shouldRes).length; i++) {
+        test('should be ' + shouldRes[i] + ' when eval ' , () => {
             expect(rs[i]).toBe(shouldRes[i])
         })
     }

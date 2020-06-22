@@ -29,7 +29,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => prrt> = new Map()
         return !(v instanceof Pair) ? makeT(tail.lineNumber) : makeNil(tail.lineNumber)
     })
     .set("eq", (tail: AstNode, env: Env): prrt => {
-        if (!isListLen(tail, 1)) {
+        if (!isListLen(tail, 2)) {
             return new Error("eq must have 2 parameters", tail.lineNumber, tail)
         }
         const t = tail as Pair<AstNode>
@@ -86,7 +86,7 @@ const functions: Map<string, (tail: AstNode, env: Env) => prrt> = new Map()
         return new Error("cdr must have a pair", tail.lineNumber, tail);
     })
     .set("cons", (tail: AstNode, env: Env): prrt => {
-        if (!isListLen(tail, 1)) {
+        if (!isListLen(tail, 2)) {
             return new Error("cons must have 2 parameters", tail.lineNumber, tail)
         }
         const t = tail as Pair<AstNode>
@@ -160,8 +160,8 @@ const functions: Map<string, (tail: AstNode, env: Env) => prrt> = new Map()
         return evalExpr(<AstNode>letBody, env.deriv(vars))
     })
     .set("lambda", function (tail: AstNode, env: Env, node: AstNode): prrt {
-        if (!isList(tail) || length(tail) != 2) {
-            return new Error("lambda must have a list of define and a body", tail.lineNumber, tail)
+        if (!isList(tail) || length(tail) < 2) {
+            return new Error("lambda must have a list of define and at least one body", tail.lineNumber, tail)
         }
         // lambda (x) body
         const varList = (tail as Pair<AstNode>).left
@@ -173,27 +173,27 @@ const functions: Map<string, (tail: AstNode, env: Env) => prrt> = new Map()
         return new Clojure(node, env)
     })
     .set("define", function (tail: AstNode, env: Env): prrt {
-        if (!isList(tail) || length(tail) >= 2) {
+        if (!(isList(tail) && length(tail) >= 2)) {
             return new Error("define must have name and at least 1 body", tail.lineNumber, tail)
         }
         const name = (tail as Pair<AstNode>).left
         if (name instanceof Token) {
             // define x v
-            if (typeof name !== "string") {
+            if (typeof name.value !== "string") {
                 return new Error("name can not be a number", name.lineNumber, name)
             }
-            return define(name, ((tail as Pair<AstNode>).right as Pair<AstNode>).left, env)
+            return define(name.value, ((tail as Pair<AstNode>).right as Pair<AstNode>).left, env)
         }
         const realName = (name as Pair<AstNode>).left
-        if (name instanceof Token) {
-            if (typeof realName !== "string") {
+        if (realName instanceof Token) {
+            if (typeof realName.value !== "string") {
                 return new Error("define name must be atom", name.lineNumber, name)
             }
             const parameters = (name as Pair<AstNode>).right
             const lambdaToken = new Token("lambda", name.lineNumber)
             const body = (tail as Pair<AstNode>).right
             const lambda = new Pair<AstNode>(lambdaToken, new Pair(parameters, body))
-            return define(realName, lambda, env)
+            return define(realName.value, lambda, env)
         }
         // todo define body not empty
         return null
@@ -327,7 +327,7 @@ export function eq(v1: Value, v2: Value): boolean {
 
 export function length(v: Value): number {
     let i = 0
-    while (v !== null) {
+    while (!isNil(v)) {
         if (!(v instanceof Pair)) {
             error("length must be pair, atom given")
             break
@@ -378,6 +378,7 @@ function isNameList(node: AstNode): boolean {
         if (!(v instanceof Token && typeof v.value === "string")) {
             return false
         }
+        node=(node as Pair<AstNode>).right
     }
     return true
 }
